@@ -1,0 +1,74 @@
+import pandas as pd
+
+# Load cleaned College Scorecard data
+
+df = pd.read_csv("data/cleaned_college_data.csv")
+
+# Student Success
+
+# Student Success combines:
+# 70% graduation rate + 30% retention rate
+df["STUDENT_SUCCESS"] = (
+    df["RET_FT4"] * 0.3
+    + df["C150_4"] * 0.7
+)
+
+# Convert Student Success to a percentile
+df["STUDENT_SUCCESS_PERCENTILE"] = df["STUDENT_SUCCESS"].rank(
+    pct=True
+)
+
+
+# Outcomes
+
+# Debt relative to post-college earnings
+df["DEBT_TO_EARNINGS"] = (
+    df["DEBT_MDN"] / df["MD_EARN_WNE_P10"]
+)
+
+# Higher earnings = better
+df["EARNINGS_PERCENTILE"] = df["MD_EARN_WNE_P10"].rank(
+    pct=True
+)
+
+# Lower debt-to-earnings ratio = better
+df["DEBT_BURDEN_PERCENTILE"] = df["DEBT_TO_EARNINGS"].rank(
+    pct=True,
+    ascending=False
+)
+
+# Outcomes combines:
+# 60% earnings + 40% debt burden
+df["OUTCOME_SCORE"] = (
+    0.6 * df["EARNINGS_PERCENTILE"]
+    + 0.4 * df["DEBT_BURDEN_PERCENTILE"]
+)
+
+
+# Affordability
+
+# Lower net price = higher affordability percentile
+df["AFFORDABILITY_PERCENTILE"] = df["NET_PRICE"].rank(
+    pct=True,
+    ascending=False
+)
+
+
+# Accessibility
+
+# Higher Pell Grant participation = greater accessibility
+df["ACCESSIBILITY_PERCENTILE"] = df["PCTPELL"].rank(
+    pct=True,
+    ascending=True
+)
+
+
+# Save engineered dataset
+
+df.to_csv(
+    "data/engineered_college_data.csv",
+    index=False
+)
+
+print("Feature engineering complete.")
+print("Final dataset shape:", df.shape)
