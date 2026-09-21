@@ -1,0 +1,85 @@
+import pandas as pd
+
+# Load engineered data
+
+df = pd.read_csv("data/engineered_college_data.csv")
+
+
+# Convert Student Success to percentile
+
+df["STUDENT_SUCCESS_PERCENTILE"] = df["STUDENT_SUCCESS"].rank(
+    pct=True,
+    ascending=True
+)
+
+# Calculate baseline final score
+
+# Ranking weights:
+# Student Success = 40%
+# Outcomes = 35%
+# Affordability = 20%
+# Accessibility = 5%
+
+df["FINAL_SCORE"] = (
+    df["STUDENT_SUCCESS_PERCENTILE"] * 0.40
+    + df["OUTCOME_SCORE"] * 0.35
+    + df["AFFORDABILITY_PERCENTILE"] * 0.20
+    + df["ACCESSIBILITY_PERCENTILE"] * 0.05
+)
+
+
+# Create final ranking
+
+final_ranking = df.sort_values(
+    "FINAL_SCORE",
+    ascending=False
+).copy()
+
+# Add rank numbers
+final_ranking = final_ranking.reset_index(drop=True)
+final_ranking.index = final_ranking.index + 1
+final_ranking.index.name = "RANK"
+
+
+# Test alternative weighting scenarios
+
+scenarios = {
+    "baseline": [0.40, 0.35, 0.20, 0.05],
+    "equal": [0.25, 0.25, 0.25, 0.25],
+    "success": [0.70, 0.20, 0.05, 0.05],
+    "outcome": [0.30, 0.45, 0.15, 0.10],
+    "affordability": [0.30, 0.20, 0.40, 0.10],
+    "accessibility": [0.20, 0.20, 0.20, 0.40]
+}
+
+for name, weights in scenarios.items():
+
+    df[name] = (
+        df["STUDENT_SUCCESS_PERCENTILE"] * weights[0]
+        + df["OUTCOME_SCORE"] * weights[1]
+        + df["AFFORDABILITY_PERCENTILE"] * weights[2]
+        + df["ACCESSIBILITY_PERCENTILE"] * weights[3]
+    )
+
+
+# Save final ranking
+
+final_ranking.to_csv(
+    "data/final_ranking.csv"
+)
+
+print("Final ranking complete.")
+
+print("\nTop 10 Universities:")
+print(
+    final_ranking[
+        [
+            "INSTNM",
+            "STUDENT_SUCCESS_PERCENTILE",
+            "OUTCOME_SCORE",
+            "AFFORDABILITY_PERCENTILE",
+            "ACCESSIBILITY_PERCENTILE",
+            "FINAL_SCORE"
+        ]
+    ].head(10)
+)
